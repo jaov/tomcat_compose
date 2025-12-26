@@ -1,9 +1,17 @@
 #!/bin/bash
-set -e # Stop immediately if a command fails
+set -e
 
-echo "Starting Restore Process..."
+# Use the variable passed from docker-compose, or default to 'my_db.backup'
+FILENAME=${BACKUP_FILENAME}
 
 # Use the variables already defined in your docker-compose environment
 pg_restore -v -U "$POSTGRES_USER" -d "$POSTGRES_DB" /docker-entrypoint-initdb.d/my_db.backup
+echo "--- STARTING RESTORE FROM /docker-entrypoint-initdb.d/$FILENAME ---"
 
-echo "Restore Complete!"
+if [ -f "/docker-entrypoint-initdb.d/$FILENAME" ]; then
+    pg_restore -v -U "$POSTGRES_USER" -d "$POSTGRES_DB" "/docker-entrypoint-initdb.d/$FILENAME"
+    echo "--- RESTORE COMPLETE ---"
+else
+    echo "ERROR: Backup file $FILENAME not found in /docker-entrypoint-initdb.d/"
+    exit 1
+fi
