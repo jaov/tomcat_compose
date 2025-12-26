@@ -1,0 +1,53 @@
+services:
+  db:
+    image: postgres:${POSTGRES_VERSION}
+    container_name: postgres-db
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      # from pg_dump, mounting file and script
+      #- ./postgres-init/my_db.backup:/docker-entrypoint-initdb.d/my_db.backup:ro
+      #- ./postgres-init/restore.sh:/docker-entrypoint-initdb.d/restore.sh:ro
+      # --- Preload from a sql file ---
+      #- ./postgres-init/my_backup.sql:/docker-entrypoint-initdb.d/init.sql:ro
+  
+  vm-base:
+    build:
+      context: .
+      dockerfile: hotswap-vm.Dockerfile
+    image: jaov/hotswap-trava-8
+
+  app:
+    build:
+      context: .
+      dockerfile: hotswap-tomcat.Dockerfile
+      # THE ORCHESTRATION MAGIC:
+      # This links the 'jaov/hotswap-trava-8' name inside the Tomcat Dockerfile 
+      # directly to the result of the 'vm-base' service build.
+      additional_contexts:
+        jaov/hotswap-trava-8: "service:vm-base"
+    container_name: tomcat-app
+    depends_on:
+      - db
+      - vm-base
+    environment:
+      # These variables can now be read by your Java app (System.getenv("DB_USER"))
+      DATABASE_USER: ${DB_USER}
+      DATABASE_PASS: ${DB_PASS}
+      DATABASE_NAME: ${DB_NAME}
+      DATABASE_URL: jdbc:postgresql://db:5432/${DB_NAME}
+    volumes:
+      # Use the variables for local paths. 
+      # Note: We still hardcode the internal Tomcat path because it's fixed in the image.
+      - ${EXPLODED_PATH}:/opt/apache-tomcat-${TOMCAT_VERSION}/webapps/ROOT
+      - ${SRC_PATH}:/opt/apache-tomcat-${TOMCAT_VERSION}/webapps/ROOT
+      - ${EXPLODED_PATH}/WEB-INF/lib:/opt/apache-tomcat-${TOMCAT_VERSION}/webapps/ROOT/WEB-INF/lib
+      - ${CLASSES_PATH}:/opt/apache-tomcat-${TOMCAT_VERSION}/webapps/ROOT/WEB-INF/classes
+
+volumes:
+  pg_data:
