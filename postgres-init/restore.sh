@@ -5,7 +5,6 @@ set -e
 FILENAME=${BACKUP_FILENAME}
 
 # Use the variables already defined in your docker-compose environment
-pg_restore -v -U "$POSTGRES_USER" -d "$POSTGRES_DB" /docker-entrypoint-initdb.d/my_db.backup
 echo "--- STARTING RESTORE FROM /docker-entrypoint-initdb.d/$FILENAME ---"
 
 if [ -f "/docker-entrypoint-initdb.d/$FILENAME" ]; then
