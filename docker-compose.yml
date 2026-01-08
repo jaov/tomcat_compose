@@ -45,10 +45,10 @@ services:
     volumes:
       # Use the variables for local paths. 
       # Note: We still hardcode the internal Tomcat path because it's fixed in the image.
-      - ${EXPLODED_PATH}:/opt/apache-tomcat-${TOMCAT_VERSION}/webapps/ROOT
-      - ${SRC_PATH}:/opt/apache-tomcat-${TOMCAT_VERSION}/webapps/ROOT
-      - ${EXPLODED_PATH}/WEB-INF/lib:/opt/apache-tomcat-${TOMCAT_VERSION}/webapps/ROOT/WEB-INF/lib
-      - ${CLASSES_PATH}:/opt/apache-tomcat-${TOMCAT_VERSION}/webapps/ROOT/WEB-INF/classes
+      - ${EXPLODED_PATH}:/opt/apache-tomcat-${TOMCAT_VERSION}/webapps/${WEBAPP_CONTEXT:-ROOT}
+      - ${SRC_PATH}:/opt/apache-tomcat-${TOMCAT_VERSION}/webapps/${WEBAPP_CONTEXT:-ROOT}
+      - ${EXPLODED_PATH}/WEB-INF/lib:/opt/apache-tomcat-${TOMCAT_VERSION}/webapps/${WEBAPP_CONTEXT:-ROOT}/WEB-INF/lib
+      - ${CLASSES_PATH}:/opt/apache-tomcat-${TOMCAT_VERSION}/webapps/${WEBAPP_CONTEXT:-ROOT}/WEB-INF/classes
 
 volumes:
   pg_data:
