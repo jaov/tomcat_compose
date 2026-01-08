@@ -100,4 +100,6 @@
         <exec executable="docker"><arg line="compose down"/></exec>
     </target>
 
+    <target name="restart" depends="stop, clean, start"/>
+
 </project>
