@@ -1,0 +1,103 @@
+<project name="HotSwapDevEnv" default="start" basedir=".">
+    <property file=".env"/>
+
+    <!-- Paths -->
+    <property name="src.java.dir"  value="${JAVA_SRC_PATH}"/>
+    <property name="src.web.dir"   value="${SRC_PATH}"/>
+    <property name="web.lib.dir"   value="${SRC_PATH}/WEB-INF/lib"/>
+    <property name="build.lib.dir" value="build-lib"/>
+
+    <!-- Classpath -->
+    <path id="project.classpath">
+        <fileset dir="${web.lib.dir}">
+            <include name="*.jar"/>
+        </fileset>
+        <fileset dir="${build.lib.dir}">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+
+    <!-- INIT -->
+    <target name="init">
+        <mkdir dir="${src.java.dir}"/>
+        <mkdir dir="${src.web.dir}"/>
+        <mkdir dir="${web.lib.dir}"/>
+        <mkdir dir="${build.lib.dir}"/>
+        <mkdir dir="${EXPLODED_PATH}"/>
+        <mkdir dir="${CLASSES_PATH}"/>
+
+        <!-- Create basic web artifacts -->
+         <echo file="${src.web.dir}/WEB-INF/web.xml"><![CDATA[<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee 
+                             http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1">
+    <display-name>My App</display-name>
+</web-app>]]></echo>
+
+        <echo file="${src.web.dir}/hello.jsp"><![CDATA[<html>
+<body>
+<h2>Hello from Ant Init!</h2>
+<p>Date: <%= new java.util.Date() %></p>
+</body>
+</html>]]></echo>
+
+        <antcall target="fetch-build-libs"/>
+        <echo message="[INIT] Ready. Run 'ant start'."/>
+    </target>
+
+    <target name="fetch-build-libs">
+        <echo message="[DOCKER] Extracting servlet-api.jar..."/>
+        <!-- 
+             COMMAND EXPLANATION:
+             1. 'docker compose run -rm': Spins up a temporary container.
+             2. '-entrypoint cat': overrides startup.
+             3. Path: internal path using vars.
+             4. '>': Redirects output.
+        -->
+        <exec executable="bash" failonerror="true">
+            <arg value="-c"/>
+            <arg value="docker compose run --rm --entrypoint cat app /opt/apache-tomcat-${TOMCAT_VERSION}/lib/servlet-api.jar > ${build.lib.dir}/servlet-api.jar"/>
+        </exec>
+    </target>
+
+    <!-- BUILD -->
+    <target name="clean">
+        <delete dir="${EXPLODED_PATH}"/>
+        <delete dir="${CLASSES_PATH}"/>
+        <delete dir="${build.lib.dir}"/>
+    </target>
+
+    <target name="prepare">
+        <mkdir dir="${EXPLODED_PATH}"/>
+        <mkdir dir="${CLASSES_PATH}"/> 
+    </target>
+
+    <target name="compile" depends="prepare">
+        <javac srcdir="${src.java.dir}" 
+               destdir="${CLASSES_PATH}" 
+               classpathref="project.classpath"
+               includeantruntime="false"
+               debug="true"/>
+    </target>
+
+    <target name="explode" depends="compile">
+        <copy todir="${EXPLODED_PATH}">
+            <fileset dir="${src.web.dir}">
+                <exclude name="**/*.java"/>
+                <exclude name="WEB-INF/classes/**"/>
+            </fileset>
+        </copy>
+    </target>
+
+    <!-- RUN -->
+    <target name="start" depends="explode">
+        <exec executable="docker"><arg line="compose up -d --remove-orphans"/></exec>
+        <echo message="Started at http://localhost:${TOMCAT_PORT}/${WEBAPP_CONTEXT}"/>
+    </target>
+
+    <target name="stop">
+        <exec executable="docker"><arg line="compose down"/></exec>
+    </target>
+
+</project>
