@@ -11,6 +11,5 @@ if [ -f "/docker-entrypoint-initdb.d/$FILENAME" ]; then
     pg_restore -v -U "$POSTGRES_USER" -d "$POSTGRES_DB" "/docker-entrypoint-initdb.d/$FILENAME"
     echo "--- RESTORE COMPLETE ---"
 else
-    echo "ERROR: Backup file $FILENAME not found in /docker-entrypoint-initdb.d/"
-    exit 1
+    echo "WARNING: Backup file $FILENAME not found in /docker-entrypoint-initdb.d/. Skipping restore."
 fi
